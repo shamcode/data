@@ -140,9 +140,9 @@ export function _findAll(adapter, store, modelName, sinceToken, options) {
   }, null, 'DS: Extract payload of findAll ${modelName}');
 }
 
-export function _query(adapter, store, modelName, query, recordArray) {
+export function _query(adapter, store, modelName, query, recordArray, options) {
   let modelClass = store.modelFor(modelName); // adapter.query needs the class
-  let promise = adapter.query(store, modelClass, query, recordArray);
+  let promise = adapter.query(store, modelClass, query, recordArray, options);
 
   let serializerToken = heimdall.start('initial-serializerFor-lookup');
   let serializer = serializerForAdapter(store, adapter, modelName);
@@ -165,9 +165,9 @@ export function _query(adapter, store, modelName, query, recordArray) {
   }, null, `DS: Extract payload of query ${modelName}`);
 }
 
-export function _queryRecord(adapter, store, modelName, query) {
+export function _queryRecord(adapter, store, modelName, query, options) {
   let modelClass = store.modelFor(modelName); // adapter.queryRecord needs the class
-  let promise = adapter.queryRecord(store, modelClass, query);
+  let promise = adapter.queryRecord(store, modelClass, query, options);
   let serializer = serializerForAdapter(store, adapter, modelName);
   let label = `DS: Handle Adapter#queryRecord of ${modelName}`;
 
