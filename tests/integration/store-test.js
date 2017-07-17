@@ -206,6 +206,66 @@ test("destroying the store correctly cleans everything up", function(assert) {
   assert.equal(filterdPeopleWillDestroy.called.length, 1, 'expected filterdPeople.willDestroy to have been called once');
 });
 
+test("store#unloadAll should correct unload record with hasMany relationship and links in payload - #5063", function(assert) {
+  assert.expect(4);
+  let done = assert.async();
+
+  Person.reopen({
+    cars: DS.hasMany('car', { async: true })
+  });
+
+  let TestAdapter = DS.JSONAPIAdapter.extend({
+    findHasMany(store, snapshot, link, relationship) {
+      return Ember.RSVP.resolve({
+        data: [
+          { id: 1, type: 'car' },
+          { id: 2, type: 'car' }
+        ]
+      });
+    },
+    _ajaxRequest(hash) {
+      setTimeout(() => {
+        const jqXHR = {
+          status: 200,
+          getAllResponseHeaders() { return ''; }
+        };
+        Ember.run(hash, 'success', {
+          data: {
+            id: 'person-1',
+            type: 'person',
+            relationships: {
+              cars: {
+                links: { related: 'cars' }
+              }
+            }
+          }
+        }, 'OK', jqXHR);
+      }, 0);
+    }
+  });
+
+  initializeStore(TestAdapter);
+
+  run(() => {
+    store.findRecord('person', 'person-1').then(person => {
+      person.get('cars').then(cars => {
+        assert.equal(cars.get('isLoaded'), true, "cars are loaded");
+        assert.equal(cars.get('length'), 2, "cars have 2 length");
+
+        store.unloadRecord(person);
+
+        store.findRecord('person', 'person-1').then(person => {
+          person.get('cars').then(cars => {
+            assert.equal(cars.get('isLoaded'), true, "cars are loaded");
+            assert.equal(cars.get('length'), 2, "cars have 2 length");
+            done();
+          });
+        });
+      });
+    });
+  })
+});
+
 function ajaxResponse(value) {
   if (isEnabled('ds-improved-ajax')) {
     env.adapter._makeRequest = function() {
